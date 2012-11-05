@@ -9,4 +9,8 @@
   <depend stack="youbot_common" />
   <depend stack="simulator_gazebo" />
   <depend stack="pr2_common" />
+  <depend stack="joystick_drivers" />
+  <depend stack="robot_model" />
+  <depend stack="youbot_drivers" />
+  <depend stack="openni_launch" />
 </stack>

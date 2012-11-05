@@ -1,10 +1,10 @@
 <!--
-	 Author: Russell Toris, Worcester Polytechnic Institute
-	Version: Aug 2, 2012
+   Author: Russell Toris, Worcester Polytechnic Institute
+  Version: Aug 2, 2012
 -->
 
 <launch>
-	<!-- Create an instance of each appropriate node -->
-	<node name="youbot_joy_teleop" pkg="rail_youbot_teleop" type="youbot_joy_teleop" respawn="false" output="screen" />
-	<node name="joy_node" pkg="joy" type="joy_node" respawn="false" output="screen" />
+  <!-- Create an instance of each appropriate node -->
+  <node name="youbot_joy_teleop" pkg="rail_youbot_teleop" type="youbot_joy_teleop" respawn="false" output="screen" />
+  <node name="joy_node" pkg="joy" type="joy_node" respawn="false" output="screen" />
 </launch>
