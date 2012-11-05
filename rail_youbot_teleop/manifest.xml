@@ -1,0 +1,11 @@
+<package>
+	<description brief="Control the Kuka YouBot via a joystick.">The rail_youbot_teleop package contains nodes to control the YouBot base via a joystick.</description>
+	<author>Russell Toris</author>
+	<license>BSD</license>
+	<review status="unreviewed" notes="" />
+	<url>http://ros.org/wiki/rail_youbot_teleop</url>
+  
+	<depend package="roscpp" />
+	<depend package="joy" />
+	<depend package="geometry_msgs" />
+</package>

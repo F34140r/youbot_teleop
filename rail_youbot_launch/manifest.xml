@@ -1,0 +1,13 @@
+<package>
+  <description brief="Launch files useful for starting the Kuka youBot">A set of launch files that are useful when launching the Kuka youBot.</description>
+  <author>Russell Toris</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes="" />
+  <url>http://ros.org/wiki/rail_youbot_launch</url>
+
+  <depend package="rail_youbot_description" />
+  <depend package="youbot_oodl" />
+  <depend package="robot_state_publisher" />
+  <depend package="xacro" />
+  <depend package="openni_launch" />
+</package>

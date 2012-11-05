@@ -1,0 +1,12 @@
+<stack>
+	<description brief="Software for the Kuka youBot developed by the RAIL lab at WPI">The rail_youbot stack contains software such as customized URDF models of the youBot and teleoperation software.</description>
+	<author>Maintained by Russell Toris</author>
+	<license>BSD</license>  
+	<review status="unreviewed" notes="" />
+	<url>http://ros.org/wiki/rail_youbot</url>
+
+	<depend stack="ros" />
+  <depend stack="youbot_common" />
+  <depend stack="simulator_gazebo" />
+  <depend stack="pr2_common" />
+</stack>
