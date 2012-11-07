@@ -33,9 +33,7 @@
   <!-- kinect -->
   <!-- <include filename="$(find pr2_description)/urdf/sensors/head_sensor_package.urdf.xacro" /> -->
   <include filename="$(find pr2_description)/urdf/sensors/kinect_camera.urdf.xacro" />
-  <!-- gripper camera -->
-  <include filename="$(find rail_youbot_description)/urdf/youbot_gripper/gripper_camera.urdf.xacro" />
-
+  
   <property name="front_marker_offset_x" value="0.152" />
     <property name="front_marker_offset_y" value="0.13" />  
     <property name="front_marker_offset_z" value="0.015" />
