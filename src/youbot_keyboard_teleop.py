@@ -2,7 +2,7 @@
 # Initial code created by Graylin Trevor Jay (tjay@cs.brown.edu) an published under Crative Commens Attribution license.
 # addition for signal interrupt by Koen Buys
 
-import roslib; roslib.load_manifest('youbot_oodl')
+import roslib; #roslib.load_manifest('youbot_oodl')
 import rospy
 
 from geometry_msgs.msg import Twist
