@@ -1,8 +1,4 @@
-<!--
-   Author: Russell Toris, Worcester Polytechnic Institute
-  Version: Aug 2, 2012
--->
-
+<?xml version="1.0"?>
 <launch>
   <!-- Create an instance of each appropriate node -->
   <node name="youbot_joy_teleop" pkg="youbot_teleop" type="youbot_joy_teleop" respawn="false" output="screen" />
