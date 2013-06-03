@@ -1,7 +1,0 @@
-/**
-\mainpage
-\htmlinclude manifest.html
-
-\b youbot_teleop is the ROS package responsible for controlling the Kuka YouBot via teleoperation.
-Currently, this package allows for control of the YouBot base with a joystick.
-*/

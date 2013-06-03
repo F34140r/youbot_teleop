@@ -4,10 +4,8 @@ project(youbot_teleop)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-########### ROS ###########
-find_package(catkin REQUIRED COMPONENTS roscpp joy rosconsole)
-find_package(Boost REQUIRED COMPONENTS thread date_time filesystem system regex)
-set(CMAKE_BUILD_TYPE Release)
+find_package(catkin REQUIRED COMPONENTS roscpp joy geometry_msgs)
+
 ###################################################
 ## Declare things to be passed to other projects ##
 ###################################################
@@ -15,32 +13,31 @@ set(CMAKE_BUILD_TYPE Release)
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES youbot_teleop
-  CATKIN_DEPENDS rosconsole
-)
+catkin_package()
+
+###########
+## Build ##
+###########
 
 ## Specify additional locations of header files
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
-  ${Boost_INCLUDE_DIRS}
 )
 
-link_directories(
-  ${catkin_LIBRARY_DIRS}
-)
-
-#copy header files
-install(DIRECTORY include/
-  DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-  FILES_MATCHING PATTERN "*.hpp" PATTERN "*.h"
-)
-
-install(PROGRAMS src/youbot_keyboard_teleop.py
-  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+set(CMAKE_BUILD_TYPE Release)
 
 add_executable(youbot_joy_teleop src/youbot_joy_teleop.cpp)
+target_link_libraries(youbot_joy_teleop ${catkin_LIBRARIES})
 
-target_link_libraries(youbot_joy_teleop ${catkin_LIBRARIES} ${boost_LIBRARIES})
+#############
+## Install ##
+#############
+
+## Mark executables and/or libraries for installation
+install(TARGETS youbot_joy_teleop
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+install(PROGRAMS scripts/youbot_keyboard_teleop.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)

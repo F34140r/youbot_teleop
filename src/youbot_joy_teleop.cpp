@@ -1,52 +1,12 @@
-/*********************************************************************
- *
- * Software License Agreement (BSD License)
- *
- *  Copyright (c) 2012, Worcester Polytechnic Institute
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of the Worcester Polytechnic Institute nor the 
- *     names of its contributors may be used to endorse or promote 
- *     products derived from this software without specific prior 
- *     written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- *
- *   Author: Russell Toris
- *  Version: Aug 2, 2012
- *
- *********************************************************************/
-
 /*!
  * \file youbot_joy_teleop.cpp
- * \brief Allows for control of the Kuka YouBot with a joystick.
+ * \brief Allows for control of the KUKA youBot with a joystick.
  *
- * youbot_joy_teleop creates a ROS node that allows the control of a Kuka YouBot with a joystick.
+ * youbot_joy_teleop creates a ROS node that allows the control of a KUKA youBot with a joystick.
  * This node listens to a /joy topic and sends messages to the /cmd_vel topic. Arm control is currently unimplemented.
  *
  * \author Russell Toris, WPI - rctoris@wpi.edu
- * \date Aug 2, 2012
+ * \date May 21, 2013
  */
 
 #include <geometry_msgs/Twist.h>
@@ -59,10 +19,10 @@ using namespace std;
 youbot_joy_teleop::youbot_joy_teleop()
 {
   // create the ROS topics
-  cmd_vel = node.advertise<geometry_msgs::Twist>("cmd_vel", 10);
-  joy_sub = node.subscribe<sensor_msgs::Joy>("joy", 10, &youbot_joy_teleop::joy_cback, this);
+  cmd_vel = node.advertise < geometry_msgs::Twist > ("cmd_vel", 10);
+  joy_sub = node.subscribe < sensor_msgs::Joy > ("joy", 10, &youbot_joy_teleop::joy_cback, this);
 
-  ROS_INFO("YouBot Joystick Teleop Started");
+  ROS_INFO("youBot Joystick Teleop Started");
 }
 
 void youbot_joy_teleop::joy_cback(const sensor_msgs::Joy::ConstPtr& joy)
