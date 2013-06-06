@@ -4,7 +4,7 @@ project(youbot_teleop)
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
-find_package(catkin REQUIRED COMPONENTS roscpp joy geometry_msgs)
+find_package(catkin REQUIRED COMPONENTS roscpp joy geometry_msgs brics_actuator)
 
 ###################################################
 ## Declare things to be passed to other projects ##
@@ -23,11 +23,14 @@ catkin_package()
 include_directories(
   include
   ${catkin_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIR}
 )
 
 set(CMAKE_BUILD_TYPE Release)
 
 add_executable(youbot_joy_teleop src/youbot_joy_teleop.cpp)
+add_executable(youbot_teleop_arm src/youbot_teleop_arm.cpp)
+target_link_libraries(youbot_teleop_arm ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(youbot_joy_teleop ${catkin_LIBRARIES})
 
 #############
@@ -36,6 +39,9 @@ target_link_libraries(youbot_joy_teleop ${catkin_LIBRARIES})
 
 ## Mark executables and/or libraries for installation
 install(TARGETS youbot_joy_teleop
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+install(TARGETS youbot_teleop_arm
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 install(PROGRAMS scripts/youbot_keyboard_teleop.py
