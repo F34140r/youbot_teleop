@@ -113,7 +113,7 @@ bool commandMatch()
 	return match;
 }
 */
-void position_listener(const sensor_msgs::JointState::ConstPtr& msg)
+void position_publisher(const sensor_msgs::JointState::ConstPtr& msg)
 {
 	if(msg->name[0] == "arm_joint_1")
 	{
