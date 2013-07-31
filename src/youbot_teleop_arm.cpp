@@ -113,16 +113,19 @@ bool commandMatch()
 	return match;
 }
 */
-void position_publisher(const sensor_msgs::JointState::ConstPtr& msg)
+void position_listener(const sensor_msgs::JointState::ConstPtr& msg)
 {
-	joint[0] = msg->position[0];
-	joint[1] = msg->position[1];
-	joint[2] = msg->position[2];
-	joint[3] = msg->position[3];
-	joint[4] = msg->position[4];
+	if(msg->name[0] == "arm_joint_1")
+	{
+		joint[0] = msg->position[0];
+		joint[1] = msg->position[1];
+		joint[2] = msg->position[2];
+		joint[3] = msg->position[3];
+		joint[4] = msg->position[4];
 
-	gripperl = msg->position[5];
-	gripperr = msg->position[6];
+		gripperl = msg->position[5];
+		gripperr = msg->position[6];
+	}
 }
 
 char getch(void)
@@ -149,7 +152,7 @@ int main(int argc, char **argv) {
 
 	armPositionsPublisher = n.advertise<brics_actuator::JointPositions > ("arm_1/arm_controller/position_command", 1);
 	gripperPositionPublisher = n.advertise<brics_actuator::JointPositions > ("arm_1/gripper_controller/position_command", 1);
-	armPositionSubscriber = n.subscribe("joint_states", 1000, position_publisher);
+	armPositionSubscriber = n.subscribe("joint_states", 1000, position_listener);
 
 	std::fill_n(joint, 5, 0);
 	gripperl = 0;

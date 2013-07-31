@@ -14,6 +14,9 @@
 #include <sensor_msgs/Joy.h>
 #include <youbot_teleop/youbot_joy_teleop.h>
 
+ros::Time T;
+bool receivedmsg = false;
+
 using namespace std;
 
 youbot_joy_teleop::youbot_joy_teleop()
@@ -27,6 +30,12 @@ youbot_joy_teleop::youbot_joy_teleop()
 
 void youbot_joy_teleop::joy_cback(const sensor_msgs::Joy::ConstPtr& joy)
 {
+  if(!receivedmsg)
+  {
+    receivedmsg = true; 
+  }
+  T = ros::Time::now();
+
   // create the twist message
   geometry_msgs::Twist twist;
   // left joystick controls the linear movement
@@ -41,6 +50,15 @@ void youbot_joy_teleop::joy_cback(const sensor_msgs::Joy::ConstPtr& joy)
   cmd_vel.publish(twist);
 }
 
+void youbot_joy_teleop::joy_check()
+{
+    if( (receivedmsg) && ( (ros::Time::now().toSec() - T.toSec() ) > .15) )
+    {
+      geometry_msgs::Twist zero;
+      cmd_vel.publish(zero);
+    }
+}
+
 int main(int argc, char **argv)
 {
   // initialize ROS and the node
@@ -50,5 +68,11 @@ int main(int argc, char **argv)
   youbot_joy_teleop controller;
 
   // continue until a ctrl-c has occurred
-  ros::spin();
+  while(ros::ok())
+  {
+    controller.joy_check();
+    
+    ros::spinOnce();
+  }
+  //ros::spin();
 }
