@@ -8,6 +8,7 @@
 #include "visualization_msgs/Marker.h"
 #include "tf/transform_datatypes.h"
 #include "tf/transform_listener.h"
+#include "tf/transform_broadcaster.h"
 #include "moveit_msgs/CollisionObject.h"
 #include "moveit_msgs/PlanningScene.h"
 #include <moveit/planning_scene/planning_scene.h>
@@ -93,6 +94,84 @@ void getch_check()
   }
 }
 
+geometry_msgs::Quaternion getQuatFromRPY( double roll, double pitch, double yaw)
+{
+  tf::Quaternion quad = tf::createQuaternionFromRPY(roll, pitch, yaw);
+
+  geometry_msgs::Quaternion quad_msg;
+
+  tf::quaternionTFToMsg(quad, quad_msg);
+
+  return quad_msg;
+}
+
+geometry_msgs::Point getPosition( double xpo, double ypo, double zpo)
+{
+  geometry_msgs::Point pos;
+
+  pos.x = xpo;
+  pos.y = ypo;
+  pos.z = zpo;
+
+  return pos;
+}
+
+geometry_msgs::Pose getArmPointRelativeToOdom( double xpo, double ypo, double zpo, double ro, double pi, double ya, tf::TransformListener *tf_list, tf::TransformBroadcaster *broad )
+{
+  geometry_msgs::Pose end_pose;
+  tf::StampedTransform base_relative_to_odom;
+
+  cout << "xpo = " << xpo << endl;
+  cout << "ypo = " << ypo << endl;
+  cout << "zpo = " << zpo << endl;
+
+  try
+  {
+    (*tf_list).lookupTransform("odom","base_link",ros::Time(0), base_relative_to_odom);
+  }
+  catch(tf::TransformException ex)
+  {
+    ROS_ERROR("%s",ex.what());
+  }
+
+  tf::Transform point_relative_to_odom;
+
+  tf::Transform point_relative_to_base;
+  tf::Vector3 point_tf_origin;
+  tf::Quaternion point_tf_quaternion;
+
+  point_tf_origin.setX(xpo);
+  point_tf_origin.setY(ypo);
+  point_tf_origin.setZ(zpo);
+
+  point_tf_quaternion = tf::createQuaternionFromRPY(ro, pi, ya);
+
+  point_relative_to_base.setOrigin(point_tf_origin);
+  point_relative_to_base.setRotation(point_tf_quaternion);
+
+  point_relative_to_odom.setIdentity();
+
+  tf::Vector3 point_tf_odom_origin;
+
+  point_tf_odom_origin.setX(point_relative_to_base.getOrigin().getX() + base_relative_to_odom.getOrigin().getX());
+  point_tf_odom_origin.setY(point_relative_to_base.getOrigin().getY() + base_relative_to_odom.getOrigin().getY());
+  point_tf_odom_origin.setZ(point_relative_to_base.getOrigin().getZ() + base_relative_to_odom.getOrigin().getZ());
+  
+  point_relative_to_odom.setOrigin(point_tf_odom_origin);
+  point_relative_to_odom.setRotation( base_relative_to_odom.getRotation() * point_relative_to_base.getRotation());
+
+  geometry_msgs::Quaternion quad_msg;
+
+  tf::quaternionTFToMsg(point_relative_to_odom.getRotation(), quad_msg);
+
+  end_pose.position.x = point_relative_to_odom.getOrigin().getX();
+  end_pose.position.y = point_relative_to_odom.getOrigin().getY();
+  end_pose.position.z = point_relative_to_odom.getOrigin().getZ();
+  end_pose.orientation = quad_msg;
+
+  return end_pose;
+}
+
 int main(int argc, char **argv)
 {
   ros::init(argc, argv, "youbot_moveit_teleop", ros::init_options::AnonymousName);
@@ -103,25 +182,28 @@ int main(int argc, char **argv)
   ros::NodeHandle n;
 
   ros::Publisher marker_publisher = n.advertise<visualization_msgs::Marker>("goal_marker", 1);
-  //ros::Publisher clear_publisher = n.advertise<moveit_msgs::CollisionObject>("/planning_scene", 1);
   ros::Publisher cancel_publisher = n.advertise<actionlib_msgs::GoalID>("/arm_1/arm_controller/follow_joint_trajectory/cancel", 1);
   ros::Subscriber goal_listener = n.subscribe("/arm_1/arm_controller/follow_joint_trajectory/goal",1,goal_callback);
-  //ros::Subscriber planning_scene_listener = n.subscribe("/planning_scene",1,planning_scene_callback);
+
 
   tf::TransformListener tf_listener;
+  tf::TransformBroadcaster br;
 
   cout << "\nStarting youbot_moveit_teleop..." << endl;
   spinner.start();
 
   cout << "Connecting to move_group node for youbot arm..." << endl;
-  // this connecs to a running instance of the move_group node
+  // this connects to a running instance of the move_group node
   move_group_interface::MoveGroup group("arm");
 
-  //group.setEndEffector("gripper_eef");
+  group.setEndEffector("gripper_palm_link");
   //group.setEndEffectorLink("arm_link_5");
 
   std::string eef_link = group.getEndEffectorLink();
   std::string eef = group.getEndEffector();
+
+  cout << "\nEnd Effector Link for this group is: " << eef_link << endl;
+  cout << "\nEnd Effector for this group is: " << eef << endl;
 
   vector<string> states;
 
@@ -129,12 +211,7 @@ int main(int argc, char **argv)
 
   (*temp.getJointModelGroup("arm")).getKnownDefaultStates(states);
 
-  //temp.robot_model::RobotModel::~RobotModel();
-
-  cout << "\nEnd Effector Link for this group is: " << eef_link << endl;
-  cout << "\nEnd Effector for this group is: " << eef << endl;
-
-  double tolerance = .05;
+  double tolerance = .1;
   double orientationtolerance = 3.141592654;
   double positiontolerance = 0.05;
 
@@ -143,6 +220,13 @@ int main(int argc, char **argv)
   //group.setGoalOrientationTolerance(orientationtolerance);
   //group.setGoalPositionTolerance(positiontolerance);
 
+
+
+
+
+
+
+  // BEGINNING OF MAIN LOOP ////////////////////////////////////////////////
   while(ros::ok())
   {
 
@@ -161,7 +245,7 @@ int main(int argc, char **argv)
     goalmarker.color.g = 1;
     goalmarker.color.b = 0;
     goalmarker.color.a = 1;
-    goalmarker.mesh_resource = "package://youbot_description/meshes/youbot_gripper/palm.dae";
+    goalmarker.mesh_resource = "package://youbot_description/meshes/youbot_arm/arm5.dae";
 
 
     cout << "\nSetting starting position to current position..." << endl;
@@ -183,6 +267,18 @@ int main(int argc, char **argv)
 
     geometry_msgs::Pose new_pose;
 
+
+
+
+
+
+
+
+
+
+
+
+    //CHOICE 1:  TARGETING A SPECIFIC END-EFFECTOR POS/ORI//////////////////
     if(choose == 1)
     {
       cout << "\n---------------------------------------------------------------------" << endl;
@@ -213,47 +309,16 @@ int main(int argc, char **argv)
       cin >> yaw; //The user-provided z-position for the end-effector
       cout << "\n\nYou chose the point (" << xposition << ", " << yposition << ", " << zposition << ") with orientation (" << roll << ", " << pitch << ", " << yaw << ") ";
 
-      new_pose.position.x = xposition;
-      new_pose.position.y = yposition;
-      new_pose.position.z = zposition;
+      new_pose.position = getPosition(xposition, yposition, zposition);
 
-      new_pose.orientation.x = tf::createQuaternionFromRPY(roll, pitch, yaw).getAxis().x();
-      new_pose.orientation.y = tf::createQuaternionFromRPY(roll, pitch, yaw).getAxis().y();
-      new_pose.orientation.z = tf::createQuaternionFromRPY(roll, pitch, yaw).getAxis().z();
-      new_pose.orientation.w = tf::createQuaternionFromRPY(roll, pitch, yaw).getAxis().w();
+      new_pose.orientation = getQuatFromRPY(roll, pitch, yaw);
 
       if(frame == 1)
       {     
         cout << "relative to the arm." << endl;
         ROS_INFO("Transforming arm coordinate frame to global (odom) coordinate frame.");
 
-        tf::StampedTransform arm_relative_to_odom;
-
-        try
-        {
-          tf_listener.lookupTransform("arm_link_0", "/odom",ros::Time(0), arm_relative_to_odom);
-        }
-        catch(tf::TransformException ex)
-        {
-          ROS_ERROR("%s",ex.what());
-        }
- 
-        tf::Transform point_relative_to_odom;
-
-        tf::Transform point_relative_to_arm;
-        tf::Vector3 point_tf_origin;
-      
-        point_tf_origin.setX(xposition);
-        point_tf_origin.setY(yposition);
-        point_tf_origin.setZ(zposition);
-
-        point_relative_to_arm.setOrigin(point_tf_origin);
-    
-        point_relative_to_odom = point_relative_to_arm * arm_relative_to_odom;
-
-        xposition = point_relative_to_odom.getOrigin().getX();
-        yposition = point_relative_to_odom.getOrigin().getY();
-        zposition = point_relative_to_odom.getOrigin().getZ();
+        new_pose = getArmPointRelativeToOdom(xposition,yposition,zposition,roll,pitch,yaw, &tf_listener, &br);
       }
       if(frame == 2)
       {
@@ -265,9 +330,9 @@ int main(int argc, char **argv)
         ROS_WARN("Invalid frame provided.  Defaulting to global (odom) coordinate frame.");
       }
 
-      goalmarker.pose.position.x = xposition;
-      goalmarker.pose.position.y = yposition;
-      goalmarker.pose.position.z = zposition;
+      goalmarker.pose.position = new_pose.position;
+
+      goalmarker.pose.orientation = new_pose.orientation;
 
       marker_publisher.publish(goalmarker);
 
@@ -277,48 +342,74 @@ int main(int argc, char **argv)
 
 
 
+
+
+
+
+
+
+
+
+    //CHOICE 2:  USING THE FAKE INTERACTIVE MARKERS/////////////////////
     if(choose == 2)
     {
       cout << "Generating initial marker at end effector." << endl;
       
-      tf::StampedTransform tf_odom_gripper;
+      tf::StampedTransform tf_odom_link_5;
 
       try
       {
-        tf_listener.lookupTransform("/odom","gripper_palm_link",ros::Time(0), tf_odom_gripper);
+        tf_listener.lookupTransform("/odom","arm_link_5",ros::Time(0), tf_odom_link_5);
       }
       catch(tf::TransformException ex)
       {
         ROS_ERROR("%s",ex.what());
       }
 
-      goalmarker.pose.position.x = tf_odom_gripper.getOrigin().getX();
-      goalmarker.pose.position.y = tf_odom_gripper.getOrigin().getY();
-      goalmarker.pose.position.z = tf_odom_gripper.getOrigin().getZ();
+      goalmarker.pose.position.x = tf_odom_link_5.getOrigin().getX();
+      goalmarker.pose.position.y = tf_odom_link_5.getOrigin().getY();
+      goalmarker.pose.position.z = tf_odom_link_5.getOrigin().getZ();
   
       //goalmarker.pose = goalmarker.pose * transform;
 
-      cout << "To move the target marker along the x-axis, press a/d.\nTo move the target marker along the y-axis, press w/s.\nTo move the target marker along the z-axis, press t/g.\nTo confirm your target location, press 'o'." << endl;
+      cout << "To move the target marker along the x-axis, press w/s.\nTo move the target marker along the y-axis, press a/d.\nTo move the target marker along the z-axis, press t/g.\nTo change roll angle, press y/h.\nTo change pitch angle, press g/j.\nTo change yaw angle, press i/k.\nTo confirm your target location, press 'p'." << endl;
 
       char keyboardInput = '0';
 
-      while((keyboardInput != 'o')&&ros::ok())
+      while((keyboardInput != 'p')&&ros::ok())
       {
         keyboardInput = getch();
-        
-        if(keyboardInput == 'a')
-          goalmarker.pose.position.x += 0.01;
-        if(keyboardInput == 'd')
-          goalmarker.pose.position.x -= 0.01;
-        if(keyboardInput == 'w')
-          goalmarker.pose.position.y += 0.01;
-        if(keyboardInput == 's')
-          goalmarker.pose.position.y -= 0.01;
-        if(keyboardInput == 't')
-          goalmarker.pose.position.z += 0.01;
-        if(keyboardInput == 'g')
-          goalmarker.pose.position.z -= 0.01;
 
+        //Position controls        
+        if(keyboardInput == 'w')
+          goalmarker.pose.position.x += 0.01;
+        if(keyboardInput == 's')
+          goalmarker.pose.position.x -= 0.01;
+        if(keyboardInput == 'a')
+          goalmarker.pose.position.y += 0.01;
+        if(keyboardInput == 'd')
+          goalmarker.pose.position.y -= 0.01;
+        if(keyboardInput == 'r')
+          goalmarker.pose.position.z += 0.01;
+        if(keyboardInput == 'f')
+          goalmarker.pose.position.z -= 0.01;
+        
+        //Roll, Pitch, Yaw controls
+        if(keyboardInput == 'y')
+          roll += 0.01;
+        if(keyboardInput == 'h')
+          roll -= 0.01;
+        if(keyboardInput == 'g')
+          pitch += 0.01;
+        if(keyboardInput == 'j')
+          pitch -= 0.01;
+        if(keyboardInput == 'i')
+          yaw += 0.01;
+        if(keyboardInput == 'k')
+          yaw -= 0.01;
+
+        goalmarker.pose.orientation = getQuatFromRPY(roll, pitch, yaw);
+        
         marker_publisher.publish(goalmarker);
       }
 
@@ -337,7 +428,7 @@ int main(int argc, char **argv)
 
       try
       {
-        tf_listener.lookupTransform("arm_link_0", "/odom",ros::Time(0), tf_arm_odom);
+        tf_listener.lookupTransform("base_link", "/odom",ros::Time(0), tf_arm_odom);
       }
       catch(tf::TransformException ex)
       {
@@ -355,69 +446,24 @@ int main(int argc, char **argv)
 
       xposition = goalmarker.pose.position.x;
       yposition = goalmarker.pose.position.y;
-      zposition = goalmarker.pose.position.z;
+      zposition = goalmarker.pose.position.z;  
+
+      new_pose.position = goalmarker.pose.position;    
+      new_pose.orientation = goalmarker.pose.orientation;
     } //END OF CHOICE 2/////////////////////////////////////////////////////
 
 
 
 
+
+
+
+
+
+
+    //CHOICE 3:  MOVING TO SPECIFIC POSES FOR EACH JOINT////////////////////
     if(choose == 3)
-    {
-      /*
-      
-      ros::spinOnce();
-      
-      clear_scene();
-
-      clear_publisher.publish(cleared_scene);
-      */      
-      
-      /*
-      moveit_msgs::CollisionObject TheApocalypse;
-
-      TheApocalypse.id = "Barbra Streisand";
-      TheApocalypse.operation = TheApocalypse.ADD;
-      TheApocalypse.header.stamp = ros::Time::now();
-      TheApocalypse.header.frame_id = "/odom";
-
-      shape_msgs::SolidPrimitive boom;
-
-      boom.type = boom.BOX;
-      boom.dimensions.resize(3);
-      boom.dimensions[0] = 10000;
-      boom.dimensions[1] = 10000;
-      boom.dimensions[2] = 10000;
-
-      TheApocalypse.primitives.push_back(boom);
-
-      geometry_msgs::Pose ground_zero;
-
-      TheApocalypse.primitive_poses.push_back(ground_zero);
-
-      clear_publisher.publish(TheApocalypse);
-      */
-
-      //group.pick("object_3");
-
-      //continue;
-
-      /*
-      cout << "All remembered joint states: " << endl;
-        
-      for( map< string, vector< double > >::const_iterator ii= group.getRememberedJointValues().begin(); ii!= group.getRememberedJointValues().end(); ++ii)
-      {
-        cout << "\t" << (*ii).first << endl;
-        for(int j = 0; j < (*ii).second.size(); j++)
-        {
-          cout << "\t\t\t" << (*ii).second.at(j) << endl;
-        }
-      }
-      
-      cout << "Current State is: \n" << group.getCurrentState();
-      
-      continue;     
-      */
- 
+    { 
       cout << "Joint Pose Target Names: " << endl;
 
       for(vector<string>::iterator i= states.begin(); i!= states.end(); ++i)
@@ -435,14 +481,61 @@ int main(int argc, char **argv)
         //temp.robot_model::RobotModel::~RobotModel();
         continue;
       }
-    }
+    } //END OF CHOICE 3/////////////////////////////////////////////////////
 
+
+
+
+
+
+
+
+
+
+
+    //CHOICE 4:  EXITING////////////////////////////////////////////////////
     if(choose == 4)
     {
       cout << "Exiting...";
       break;
+    } //END OF CHOICE 4/////////////////////////////////////////////////////
+
+
+
+    if(choose == 1337)
+    {
+      xposition = -0.114;
+      yposition = -0.013;
+      zposition = 0.408;
+
+      roll = -0.005;
+      pitch = -1.284;
+      yaw = 0.052;
+
+      geometry_msgs::Pose temp_pose = getArmPointRelativeToOdom(xposition, yposition, zposition, roll, pitch, yaw, &tf_listener, &br);  
+      
+      goalmarker.pose.position = temp_pose.position;
+
+      goalmarker.pose.orientation = temp_pose.orientation;
+      
+      marker_publisher.publish(goalmarker);
+
+      new_pose.position = goalmarker.pose.position;
+      new_pose.orientation = goalmarker.pose.orientation;
     }
 
+
+
+
+
+
+
+
+
+
+
+
+    // All options aside from 3 and 4 use specified positions and set a different targets in different ways
     if(choose != 3)
     {
       cout << "Setting Position target to the provided location: (" << xposition << ", " << yposition << ", " << zposition << ") with orientation: (" << roll << ", " << pitch<< ", " << yaw << ")" << endl;
@@ -459,10 +552,16 @@ int main(int argc, char **argv)
 
       cout << group.getJointValueTarget().getJointNames()[i] << ":  " << j.getVariableValues().back() << "\t\t\t" << group.getCurrentJointValues().at(i) << endl;
      
-    }
+    } // END OF "NOT CHOICE 3"
+
+
+
+
 
     cout << "\n";
 
+    cout << "Setting starting position to current position..." << endl;
+    group.setStartStateToCurrentState();  //Sets the starting state for the move_group to be the current state of the robot
     //Plan a motion path to the user-provided position
     move_group_interface::MoveGroup::Plan p;
 
@@ -473,9 +572,9 @@ int main(int argc, char **argv)
       continue;
     }
 
-    goalmarker.pose.position.x = xposition;
-    goalmarker.pose.position.y = yposition;
-    goalmarker.pose.position.z = zposition;
+    goalmarker.pose.position = getPosition(xposition, yposition, zposition);
+
+    goalmarker.pose.orientation = getQuatFromRPY(roll, pitch, yaw);
 
     marker_publisher.publish(goalmarker);
 
@@ -485,6 +584,9 @@ int main(int argc, char **argv)
 
     cin >> enter;
 
+
+
+    // BEGINNING OF ARM MOVEMENT AND CANCELLING
     if(enter == 's')
     {
       trajectory_complete = false;
@@ -492,42 +594,51 @@ int main(int argc, char **argv)
       cout << "~~Moving to requested position~~" << endl; 
 
       goal_string = "0";
-      //Execute will perform the trajectory.  It is non-blocking.
-      boost::thread execute_thread(trajectory_execution, &group, &p);
+      //Execute will perform the trajectory.  It is non-blocking. <-- Not true!
+      boost::thread execute_thread(trajectory_execution, &group, &p); //Create new thread to execute the blocking (at the time of writing this they lied and say it is non-blocking) trajectory command
 
-      //cout << "Am I really non-blocking?" << endl;
-      boost::thread read_cancel(getch_check);
+      boost::thread read_cancel(getch_check); //Create new thread to monitor the movement of current trajectory for canceling
 
+
+      // BEGINNING OF CANCELING
       while(ros::ok())
       {
         ros::spinOnce();
+
         //Hitting 'c' mid trajectory will cancel the current trajectory
         if(cancel == 'c')
         {
           actionlib_msgs::GoalID g_id;
-          g_id.id = goal_string;
+          g_id.id = goal_string; 
 
-          cancel_publisher.publish(g_id);
+          cancel_publisher.publish(g_id); //Provide the cancel_trajectory service with the goal id to cancel
           cout << "Canceled the current trajectory!" << endl;
           cout << "Setting starting position to current position..." << endl;
-    group.setStartStateToCurrentState();  //Sets the starting state for the move_group to be the current state of the robot
-          read_cancel.join();
+          group.setStartStateToCurrentState();  //Sets the starting state for the move_group to be the current state of the robot
+          read_cancel.join(); //End cancel_trajectory thread
           break;
         }
         
-        //ros::spinOnce();
-
+        
+        // If move_group reports trajectory is complete
         if(trajectory_complete)
         {
           ROS_INFO("Trajectory completed.");
-          execute_thread.join();
-          read_cancel.interrupt();
-          break;
+          execute_thread.join(); //End trajectory_complete thread
+          read_cancel.interrupt(); //Kill idled cancel_trajectory thread
+          break; //Return to main loop
         }
-      }
-    }
+
+      } //END OF CANCELLING
+
+
+    } // END OF ARM MOVEMENT AND CANCELLING
+
+
 
     cout << "Hit Control + C to exit." << endl;
     r.sleep();
-  }
+  } // END OF MAIN LOOP ////////////////////////////////////////////////////
+
+  states.clear();
 }

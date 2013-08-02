@@ -30,10 +30,12 @@ set(CMAKE_BUILD_TYPE Release)
 
 add_executable(youbot_joy_teleop src/youbot_joy_teleop.cpp)
 add_executable(youbot_teleop_arm src/youbot_teleop_arm.cpp)
+add_executable(youbot_moveit_command src/youbot_moveit_command.cpp)
 add_executable(youbot_moveit_teleop src/youbot_moveit_teleop.cpp)
 add_executable(pick_and_place_demo src/pick_and_place_demo.cpp)
 target_link_libraries(youbot_teleop_arm ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(youbot_moveit_teleop ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+target_link_libraries(youbot_moveit_command ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 target_link_libraries(youbot_joy_teleop ${catkin_LIBRARIES})
 target_link_libraries(pick_and_place_demo ${catkin_LIBRARIES})
 
@@ -49,6 +51,9 @@ install(TARGETS youbot_teleop_arm
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 install(TARGETS youbot_moveit_teleop
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+install(TARGETS youbot_moveit_command
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 install(PROGRAMS scripts/youbot_keyboard_teleop.py
