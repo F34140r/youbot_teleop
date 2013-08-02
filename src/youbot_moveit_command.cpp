@@ -158,10 +158,6 @@ int main(int argc, char **argv)
 
   ros::NodeHandle n;
 
-  ros::Publisher marker_publisher = n.advertise<visualization_msgs::Marker>("goal_marker", 1);
-  ros::Publisher cancel_publisher = n.advertise<actionlib_msgs::GoalID>("/arm_1/arm_controller/follow_joint_trajectory/cancel", 1);
-  ros::Subscriber goal_listener = n.subscribe("/arm_1/arm_controller/follow_joint_trajectory/goal",1,goal_callback);
-
   tf::TransformListener tf_listener;
   tf::TransformBroadcaster br;
 
